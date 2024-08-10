@@ -127,7 +127,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="CameraControls.cpp" />
+    <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="GioEditor.cpp" />
+    <ClCompile Include="GizmoGUI.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="OpenGL\glad.c" />
     <ClCompile Include="OpenGL\imgui_impl_opengl3.cpp" />
@@ -135,11 +139,15 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="CameraControls.h" />
+    <ClInclude Include="GameObject.h" />
     <ClInclude Include="GioEditor.h" />
+    <ClInclude Include="GizmoGUI.h" />
     <ClInclude Include="OpenGL\glad.h" />
     <ClInclude Include="OpenGL\imgui_impl_opengl3.h" />
     <ClInclude Include="OpenGL\khrplatform.h" />
     <ClInclude Include="OS\imgui_impl_glfw.h" />
+    <ClInclude Include="Style.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

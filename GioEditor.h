@@ -18,6 +18,10 @@
 #include <string>
 #include <glm/glm.hpp>
 
+#include "GameObject.h"
+
+#include "Camera.h"
+
 class GioEditor {
 private:
     int screen_height, screen_width;
@@ -31,10 +35,14 @@ private:
 
     glm::mat4 camera_projection;
 
+    camera* editor_camera;
+
     // Camera projection
     float fov = 27.f;
 public:
     GioEditor();
+
+    camera* get_cam();
 
     int init_glfw();
 
@@ -43,6 +51,4 @@ public:
     int clean_up();
 
     int window_should_close();
-
-    int is_first_frame();
 };

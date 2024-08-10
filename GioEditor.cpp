@@ -1,89 +1,25 @@
 #include "GioEditor.h"
 #include "Camera.h"
-
-camera first_camera;
+#include "CameraControls.h"
+#include "GizmoGUI.h"
+#include "Style.h"
 
 /* constructors */
+// these are going to be here for now
 GioEditor::GioEditor() {
     this->screen_width = 1280;
     this->screen_height = 720;
 }
 
-/* all static function definitions */
+camera* GioEditor::get_cam() {
+    return editor_camera;
+}
+
+// glfw initialization
 void glfw_error_callback(int error, const char* description) {
     fprintf(stderr, "GLFW error %d: %s\n", error, description);
 }
 
-void style_color_softy(ImGuiStyle* dst = nullptr)
-{
-    ImGuiStyle* style = dst ? dst : &ImGui::GetStyle();
-
-    int hspacing = 8;
-    int vspacing = 6;
-    style->DisplaySafeAreaPadding = ImVec2(0, 0);
-    style->WindowPadding = ImVec2(hspacing / 2, vspacing);
-    style->FramePadding = ImVec2(hspacing, vspacing);
-    style->ItemSpacing = ImVec2(hspacing, vspacing);
-    style->ItemInnerSpacing = ImVec2(hspacing, vspacing);
-    style->IndentSpacing = 20.0f;
-
-    style->WindowRounding = 0.0f;
-    style->FrameRounding = 0.0f;
-
-    style->WindowBorderSize = 0.0f;
-    style->FrameBorderSize = 1.0f;
-    style->PopupBorderSize = 1.0f;
-
-    style->ScrollbarSize = 20.0f;
-    style->ScrollbarRounding = 0.0f;
-    style->GrabMinSize = 5.0f;
-    style->GrabRounding = 0.0f;
-
-    ImVec4 white = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
-    ImVec4 transparent = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-    ImVec4 dark = ImVec4(0.00f, 0.00f, 0.00f, 0.20f);
-    ImVec4 darker = ImVec4(0.00f, 0.00f, 0.00f, 0.50f);
-
-    ImVec4 background = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
-    ImVec4 text = ImVec4(0.10f, 0.10f, 0.10f, 1.00f);
-    ImVec4 border = ImVec4(0.60f, 0.60f, 0.60f, 1.00f);
-    ImVec4 grab = ImVec4(0.69f, 0.69f, 0.69f, 1.00f);
-    ImVec4 header = ImVec4(0.86f, 0.86f, 0.86f, 1.00f);
-    ImVec4 active = ImVec4(0.00f, 0.47f, 0.84f, 1.00f);
-    ImVec4 hover = ImVec4(0.00f, 0.47f, 0.84f, 0.20f);
-
-    style->Colors[ImGuiCol_Text] = text;
-    style->Colors[ImGuiCol_WindowBg] = background;
-    style->Colors[ImGuiCol_ChildBg] = background;
-    style->Colors[ImGuiCol_PopupBg] = white;
-
-    style->Colors[ImGuiCol_Border] = border;
-    style->Colors[ImGuiCol_BorderShadow] = transparent;
-
-    style->Colors[ImGuiCol_Button] = header;
-    style->Colors[ImGuiCol_ButtonHovered] = hover;
-    style->Colors[ImGuiCol_ButtonActive] = active;
-
-    style->Colors[ImGuiCol_FrameBg] = white;
-    style->Colors[ImGuiCol_FrameBgHovered] = hover;
-    style->Colors[ImGuiCol_FrameBgActive] = active;
-
-    style->Colors[ImGuiCol_MenuBarBg] = header;
-    style->Colors[ImGuiCol_Header] = header;
-    style->Colors[ImGuiCol_HeaderHovered] = hover;
-    style->Colors[ImGuiCol_HeaderActive] = active;
-
-    style->Colors[ImGuiCol_CheckMark] = text;
-    style->Colors[ImGuiCol_SliderGrab] = grab;
-    style->Colors[ImGuiCol_SliderGrabActive] = darker;
-
-    style->Colors[ImGuiCol_ScrollbarBg] = header;
-    style->Colors[ImGuiCol_ScrollbarGrab] = grab;
-    style->Colors[ImGuiCol_ScrollbarGrabHovered] = dark;
-    style->Colors[ImGuiCol_ScrollbarGrabActive] = darker;
-}
-
-/* non-static */
 int GioEditor::init_glfw() 
 {
     // setup glfw
@@ -101,39 +37,12 @@ int GioEditor::init_glfw()
 
     return EXIT_SUCCESS;
 }
-
 int GioEditor::window_should_close() {
     return glfwWindowShouldClose(this->main_window);
 }
 
-bool use_window = true;
-int gizmo_count = 1;
-float cam_distance = 8.f;
-
-static ImGuizmo::OPERATION mCurrentGizmoOperation(ImGuizmo::TRANSLATE);
-static ImGuizmo::MODE mCurrentGizmoMode(ImGuizmo::WORLD);
-
-float object_matrix[4][16] = {
-  { 1.f, 0.f, 0.f, 0.f,
-    0.f, 1.f, 0.f, 0.f,
-    0.f, 0.f, 1.f, 0.f,
-    0.f, 0.f, 0.f, 1.f },
-
-  { 1.f, 0.f, 0.f, 0.f,
-  0.f, 1.f, 0.f, 0.f,
-  0.f, 0.f, 1.f, 0.f,
-  2.f, 0.f, 0.f, 1.f },
-
-  { 1.f, 0.f, 0.f, 0.f,
-  0.f, 1.f, 0.f, 0.f,
-  0.f, 0.f, 1.f, 0.f,
-  2.f, 0.f, 2.f, 1.f },
-
-  { 1.f, 0.f, 0.f, 0.f,
-  0.f, 1.f, 0.f, 0.f,
-  0.f, 0.f, 1.f, 0.f,
-  0.f, 0.f, 2.f, 1.f }
-};
+// objects matrices
+std::vector<std::array<float, 16>> object_matrix;
 
 static const float identity_matrix[16] =
 { 1.f, 0.f, 0.f, 0.f,
@@ -141,138 +50,31 @@ static const float identity_matrix[16] =
     0.f, 0.f, 1.f, 0.f,
     0.f, 0.f, 0.f, 1.f };
 
+// Camera controls
 glm::vec3 old_mouse_pos;
 
-void fps_camera_mode()
+// scene creation
+root* root_scene;
+
+// GUI stuff
+void object_instance_window()
 {
-    glm::vec3 forward = get_forward_vector(first_camera.yaw, first_camera.pitch);
-    float velocity = 0.01;
-
-    if (ImGui::IsKeyDown(ImGuiKey_W)) {
-        first_camera.position += forward * velocity;
-    }
-    if (ImGui::IsKeyDown(ImGuiKey_S)) {
-        first_camera.position -= forward * velocity;
-    }
-    if (ImGui::IsKeyDown(ImGuiKey_D)) {
-        glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0.0f, 1.0f, 0.0f)));
-        first_camera.position += right * velocity;
-    }
-    if (ImGui::IsKeyDown(ImGuiKey_A)) {
-        glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0.0f, 1.0f, 0.0f)));
-        first_camera.position -= right * velocity;
-    }
-    if (ImGui::IsKeyDown(ImGuiKey_LeftShift)) {
-        first_camera.position.y += 0.01;
-    }
-    if (ImGui::IsKeyDown(ImGuiKey_LeftCtrl)) {
-        first_camera.position.y -= 0.01;
-    }
-}
-
-void idle_camera_mode()
-{
-    if (ImGui::IsKeyPressed(ImGuiKey_W))
-        mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
-    if (ImGui::IsKeyPressed(ImGuiKey_R))
-        mCurrentGizmoOperation = ImGuizmo::ROTATE;
-    if (ImGui::IsKeyPressed(ImGuiKey_E)) // r Key
-        mCurrentGizmoOperation = ImGuizmo::SCALE;
-}
-
-void gizmo_transform_create(glm::mat4 camera_view, glm::mat4 camera_projection, float* matrix)
-{
-    static float old_pitch;
-    static float old_yaw;
-    static bool camera_mode = false;
-
-    ImGuiIO& io = ImGui::GetIO();
-
-    if (ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
-        first_camera.pitch = old_pitch + (old_mouse_pos.x - io.MousePos.x) / 180.0f;
-        first_camera.yaw = old_yaw + (old_mouse_pos.y - io.MousePos.y) / 180.0f;
-
-        // Constrain the pitch to prevent screen flipping
-        if (first_camera.pitch > 89.0f)
-            first_camera.pitch = 89.0f;
-        if (first_camera.pitch < -89.0f)
-            first_camera.pitch = -89.0f;
-
-        camera_mode = true;
-    }
-    else {
-        old_mouse_pos.x = io.MousePos.x;
-        old_mouse_pos.y = io.MousePos.y;
-
-        old_pitch = first_camera.pitch;
-        old_yaw = first_camera.yaw;
-
-        camera_mode = false;
-    }
-
-    if (camera_mode) fps_camera_mode();
-    else idle_camera_mode();
-
-    if (ImGui::RadioButton("Translate", mCurrentGizmoOperation == ImGuizmo::TRANSLATE))
-        mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
+    ImGui::SetNextWindowPos(ImVec2(1135, 10));
+    ImGui::SetNextWindowSize(ImVec2(140, 400));
+    ImGui::Begin("object_instance_window", 0);
+    static std::vector<char *> items;
+    static int item_current = 0;
+    ImGui::ListBox(" ", &item_current, items.data(), items.size(), 10);
     ImGui::SameLine();
-    if (ImGui::RadioButton("Rotate", mCurrentGizmoOperation == ImGuizmo::ROTATE))
-        mCurrentGizmoOperation = ImGuizmo::ROTATE;
-    ImGui::SameLine();
-    if (ImGui::RadioButton("Scale", mCurrentGizmoOperation == ImGuizmo::SCALE))
-        mCurrentGizmoOperation = ImGuizmo::SCALE;
-
-    float matrix_translation[3], matrix_rotation[3], matrix_scale[3];
-    ImGuizmo::DecomposeMatrixToComponents(matrix, matrix_translation, matrix_rotation, matrix_scale);
-    ImGui::InputFloat3("Tr", matrix_translation);
-    ImGui::InputFloat3("Rt", matrix_rotation);
-    ImGui::InputFloat3("Sc", matrix_scale);
-    ImGuizmo::RecomposeMatrixFromComponents(matrix_translation, matrix_rotation, matrix_scale, matrix);
-
-    if (mCurrentGizmoOperation != ImGuizmo::SCALE)
-    {
-        if (ImGui::RadioButton("Local", mCurrentGizmoMode == ImGuizmo::LOCAL))
-            mCurrentGizmoMode = ImGuizmo::LOCAL;
-        ImGui::SameLine();
-        if (ImGui::RadioButton("World", mCurrentGizmoMode == ImGuizmo::WORLD))
-            mCurrentGizmoMode = ImGuizmo::WORLD;
+    if (ImGui::Button("+", ImVec2(20, 20))) {
+        node* current_scene = get_node_from_id(root_scene->current_scene);
+        mesh* new_object = (mesh*)create_new_object("mesh_object", "mesh");
+        current_scene->add_child(new_object);
+        object_matrix.push_back(new_object->transform);
+        items.push_back((char*)new_object->name.c_str());
+        item_current++;
     }
-
-    float view_manipulate_right = io.DisplaySize.x;
-    float view_manipulate_top = 0;
-    static ImGuiWindowFlags gizmo_window_flags = 0;
-    ImGui::SetNextWindowSize(ImVec2(800, 400), ImGuiCond_Appearing);
-    ImGui::SetNextWindowPos(ImVec2(330, 10), ImGuiCond_Appearing);
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, (ImVec4)ImColor(0.35f, 0.3f, 0.3f));
-    ImGui::Begin("Gizmo", 0, gizmo_window_flags);
-    ImGuizmo::SetDrawlist();
-    float window_width = (float)ImGui::GetWindowWidth();
-    float window_height = (float)ImGui::GetWindowHeight();
-    ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, window_width, window_height);
-    view_manipulate_right = ImGui::GetWindowPos().x + window_width;
-    view_manipulate_top = ImGui::GetWindowPos().y;
-    ImGuiWindow* window = ImGui::GetCurrentWindow();
-    gizmo_window_flags = ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect(window->InnerRect.Min, window->InnerRect.Max) ? ImGuiWindowFlags_NoMove : 0;
-
-    ImGuizmo::DrawGrid((const float*)glm::value_ptr(camera_view), (const float*)glm::value_ptr(camera_projection), identity_matrix, 100.f);
-    ImGuizmo::DrawCubes((const float*)glm::value_ptr(camera_view), (const float*)glm::value_ptr(camera_projection), &object_matrix[0][0], gizmo_count);
-
-    ImGuizmo::ViewManipulate((float*)glm::value_ptr(camera_view), cam_distance, ImVec2(view_manipulate_right - 128, view_manipulate_top), ImVec2(128, 128), 0x10101010);
-}
-
-void gizmo_transform_end()
-{
     ImGui::End();
-    ImGui::PopStyleColor(1);
-}
-
-void gizmo_edit_transform(glm::mat4 camera_view, glm::mat4 camera_projection, float* matrix)
-{
-    ImGuiIO& io = ImGui::GetIO();
-    float windowWidth = (float)ImGui::GetWindowWidth();
-    float windowHeight = (float)ImGui::GetWindowHeight();
-    ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, windowWidth, windowHeight);
-    ImGuizmo::Manipulate((const float*)glm::value_ptr(camera_view), (const float*)glm::value_ptr(camera_projection), mCurrentGizmoOperation, mCurrentGizmoMode, matrix, NULL, NULL);
 }
 
 int GioEditor::ready()
@@ -328,6 +130,18 @@ int GioEditor::ready()
 
     style_color_softy(&ImGui::GetStyle());
 
+    root_scene = new root;
+    root_scene->init_root_scene(root_scene);
+
+    scene* scene_test = new scene;
+    scene_test->create_new_scene("test_scene", scene_test, root_scene);
+
+    editor_camera = new camera;
+    editor_camera->pitch = 0.0f;
+    editor_camera->yaw = 0.0f;
+
+    editor_camera->position = glm::vec3(0.0f, 0.0f, 0.0f);
+
     return 0;
 }
 
@@ -353,14 +167,10 @@ int GioEditor::update() {
     ImGui::Begin("Editor");
 
     ImGui::Text("Camera");
-    bool viewDirty = false;
 
     ImGui::SliderFloat("Fov", &fov, 20.f, 110.f);
 
-    viewDirty |= ImGui::SliderFloat("Distance", &cam_distance, 1.f, 10.f);
-    ImGui::SliderInt("Gizmo count", &gizmo_count, 1, 4);
-
-    camera_view = glm::lookAt(first_camera.position, get_look_at(first_camera.position, first_camera.yaw, first_camera.pitch), glm::vec3(0, 1, 0));
+    camera_view = glm::lookAt(editor_camera->position, get_look_at(editor_camera->position, editor_camera->yaw, editor_camera->pitch), glm::vec3(0, 1, 0));
     firstFrame = false;
 
     ImGui::Text("X: %f Y: %f", io.MousePos.x, io.MousePos.y);
@@ -380,21 +190,27 @@ int GioEditor::update() {
     }
     ImGui::Separator();
 
-    gizmo_transform_create(camera_view, camera_projection, object_matrix[lastUsing]);
-    
-    for (int matId = 0; matId < gizmo_count; matId++)
-    {
-        ImGuizmo::SetID(matId);
+    gizmo_transform_create(camera_view, camera_projection, object_matrix, (float*)identity_matrix, lastUsing, this->editor_camera);
 
-        gizmo_edit_transform(camera_view, camera_projection, object_matrix[matId]);
-        if (ImGuizmo::IsUsing())
+    if (object_matrix.size() > 0)
+    {
+        for (int matId = 0; matId < object_matrix.size(); matId++)
         {
-            lastUsing = matId;
+            ImGuizmo::SetID(matId);
+
+            gizmo_edit_transform(camera_view, camera_projection, object_matrix[matId].data());
+            if (ImGuizmo::IsUsing())
+            {
+                lastUsing = matId;
+            }
         }
     }
+
     gizmo_transform_end();
 
     ImGui::End();
+
+    object_instance_window();
 
     ImGui::SetNextWindowPos(ImVec2(10, 350));
 

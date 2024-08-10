@@ -19,6 +19,12 @@
     <Filter Include="Arquivos de Cabeçalho\OpenGL">
       <UniqueIdentifier>{0e731428-0fee-41ad-b1a0-c9aefa2e4646}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Arquivos de Cabeçalho\GUI">
+      <UniqueIdentifier>{7f97eb88-34f3-43dd-b920-701aaf9bf893}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Arquivos de Cabeçalho\Camera">
+      <UniqueIdentifier>{4288ea7e-85d9-4820-93dc-b7fdb975a710}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -36,12 +42,21 @@
     <ClCompile Include="OS\imgui_impl_glfw.cpp">
       <Filter>Arquivos de Cabeçalho\OS</Filter>
     </ClCompile>
+    <ClCompile Include="GameObject.cpp">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClCompile>
+    <ClCompile Include="GizmoGUI.cpp">
+      <Filter>Arquivos de Cabeçalho\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="CameraControls.cpp">
+      <Filter>Arquivos de Cabeçalho\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="Camera.cpp">
+      <Filter>Arquivos de Cabeçalho\Camera</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GioEditor.h">
-      <Filter>Arquivos de Cabeçalho</Filter>
-    </ClInclude>
-    <ClInclude Include="Camera.h">
       <Filter>Arquivos de Cabeçalho</Filter>
     </ClInclude>
     <ClInclude Include="OpenGL\glad.h">
@@ -55,6 +70,21 @@
     </ClInclude>
     <ClInclude Include="OS\imgui_impl_glfw.h">
       <Filter>Arquivos de Cabeçalho\OS</Filter>
+    </ClInclude>
+    <ClInclude Include="GameObject.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="GizmoGUI.h">
+      <Filter>Arquivos de Cabeçalho\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera.h">
+      <Filter>Arquivos de Cabeçalho\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="CameraControls.h">
+      <Filter>Arquivos de Cabeçalho\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="Style.h">
+      <Filter>Arquivos de Cabeçalho\GUI</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
