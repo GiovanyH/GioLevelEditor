@@ -2,7 +2,8 @@
 #include <string>
 #include <vector>
 #include <array>
-#include <algorithm> // for std::copy
+
+#include <glm/glm.hpp>
 
 class node
 {
@@ -12,7 +13,7 @@ public:
 	std::string id;
 	std::string name;
 
-	std::array<float, 16> transform;
+	glm::mat4 transform;
 
 	void add_child(node* child);
 };
@@ -37,6 +38,9 @@ public:
 
 class mesh : public node
 {
+public:
+	unsigned int numVertices;
+	std::vector<glm::vec3> vertices;
 };
 
 node* create_new_object(std::string name, std::string type);

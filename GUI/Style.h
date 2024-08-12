@@ -7,67 +7,57 @@ void style_color_softy(ImGuiStyle* dst = nullptr)
 {
     ImGuiStyle* style = dst ? dst : &ImGui::GetStyle();
 
-    int hspacing = 8;
-    int vspacing = 6;
-    style->DisplaySafeAreaPadding = ImVec2(0, 0);
-    style->WindowPadding = ImVec2(hspacing / 2, vspacing);
-    style->FramePadding = ImVec2(hspacing, vspacing);
-    style->ItemSpacing = ImVec2(hspacing, vspacing);
-    style->ItemInnerSpacing = ImVec2(hspacing, vspacing);
-    style->IndentSpacing = 20.0f;
+    style->WindowMinSize = ImVec2(160, 20);
+    style->FramePadding = ImVec2(4, 2);
+    style->ItemSpacing = ImVec2(6, 2);
+    style->ItemInnerSpacing = ImVec2(6, 4);
+    style->Alpha = 0.95f;
+    style->WindowRounding = 4.0f;
+    style->FrameRounding = 2.0f;
+    style->IndentSpacing = 6.0f;
+    style->ItemInnerSpacing = ImVec2(2, 4);
+    style->ColumnsMinSpacing = 50.0f;
+    style->GrabMinSize = 14.0f;
+    style->GrabRounding = 16.0f;
+    style->ScrollbarSize = 12.0f;
+    style->ScrollbarRounding = 16.0f;
 
-    style->WindowRounding = 0.0f;
-    style->FrameRounding = 0.0f;
-
-    style->WindowBorderSize = 0.0f;
-    style->FrameBorderSize = 1.0f;
-    style->PopupBorderSize = 1.0f;
-
-    style->ScrollbarSize = 20.0f;
-    style->ScrollbarRounding = 0.0f;
-    style->GrabMinSize = 5.0f;
-    style->GrabRounding = 0.0f;
-
-    ImVec4 white = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
-    ImVec4 transparent = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-    ImVec4 dark = ImVec4(0.00f, 0.00f, 0.00f, 0.20f);
-    ImVec4 darker = ImVec4(0.00f, 0.00f, 0.00f, 0.50f);
-
-    ImVec4 background = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
-    ImVec4 text = ImVec4(0.10f, 0.10f, 0.10f, 1.00f);
-    ImVec4 border = ImVec4(0.60f, 0.60f, 0.60f, 1.00f);
-    ImVec4 grab = ImVec4(0.69f, 0.69f, 0.69f, 1.00f);
-    ImVec4 header = ImVec4(0.86f, 0.86f, 0.86f, 1.00f);
-    ImVec4 active = ImVec4(0.00f, 0.47f, 0.84f, 1.00f);
-    ImVec4 hover = ImVec4(0.00f, 0.47f, 0.84f, 0.20f);
-
-    style->Colors[ImGuiCol_Text] = text;
-    style->Colors[ImGuiCol_WindowBg] = background;
-    style->Colors[ImGuiCol_ChildBg] = background;
-    style->Colors[ImGuiCol_PopupBg] = white;
-
-    style->Colors[ImGuiCol_Border] = border;
-    style->Colors[ImGuiCol_BorderShadow] = transparent;
-
-    style->Colors[ImGuiCol_Button] = header;
-    style->Colors[ImGuiCol_ButtonHovered] = hover;
-    style->Colors[ImGuiCol_ButtonActive] = active;
-
-    style->Colors[ImGuiCol_FrameBg] = white;
-    style->Colors[ImGuiCol_FrameBgHovered] = hover;
-    style->Colors[ImGuiCol_FrameBgActive] = active;
-
-    style->Colors[ImGuiCol_MenuBarBg] = header;
-    style->Colors[ImGuiCol_Header] = header;
-    style->Colors[ImGuiCol_HeaderHovered] = hover;
-    style->Colors[ImGuiCol_HeaderActive] = active;
-
-    style->Colors[ImGuiCol_CheckMark] = text;
-    style->Colors[ImGuiCol_SliderGrab] = grab;
-    style->Colors[ImGuiCol_SliderGrabActive] = darker;
-
-    style->Colors[ImGuiCol_ScrollbarBg] = header;
-    style->Colors[ImGuiCol_ScrollbarGrab] = grab;
-    style->Colors[ImGuiCol_ScrollbarGrabHovered] = dark;
-    style->Colors[ImGuiCol_ScrollbarGrabActive] = darker;
+    style->Colors[ImGuiCol_Text] = ImVec4(0.86f, 0.93f, 0.89f, 0.78f);
+    style->Colors[ImGuiCol_TextDisabled] = ImVec4(0.86f, 0.93f, 0.89f, 0.28f);
+    style->Colors[ImGuiCol_WindowBg] = ImVec4(0.13f, 0.14f, 0.17f, 1.00f);
+    style->Colors[ImGuiCol_Border] = ImVec4(0.31f, 0.31f, 1.00f, 0.00f);
+    style->Colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+    style->Colors[ImGuiCol_FrameBg] = ImVec4(0.20f, 0.22f, 0.27f, 1.00f);
+    style->Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.92f, 0.18f, 0.29f, 0.78f);
+    style->Colors[ImGuiCol_FrameBgActive] = ImVec4(0.92f, 0.18f, 0.29f, 1.00f);
+    style->Colors[ImGuiCol_TitleBg] = ImVec4(0.20f, 0.22f, 0.27f, 1.00f);
+    style->Colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.20f, 0.22f, 0.27f, 0.75f);
+    style->Colors[ImGuiCol_TitleBgActive] = ImVec4(0.92f, 0.18f, 0.29f, 1.00f);
+    style->Colors[ImGuiCol_MenuBarBg] = ImVec4(0.20f, 0.22f, 0.27f, 0.47f);
+    style->Colors[ImGuiCol_ScrollbarBg] = ImVec4(0.20f, 0.22f, 0.27f, 1.00f);
+    style->Colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.09f, 0.15f, 0.16f, 1.00f);
+    style->Colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.92f, 0.18f, 0.29f, 0.78f);
+    style->Colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.92f, 0.18f, 0.29f, 1.00f);
+    style->Colors[ImGuiCol_CheckMark] = ImVec4(0.71f, 0.22f, 0.27f, 1.00f);
+    style->Colors[ImGuiCol_SliderGrab] = ImVec4(0.47f, 0.77f, 0.83f, 0.14f);
+    style->Colors[ImGuiCol_SliderGrabActive] = ImVec4(0.92f, 0.18f, 0.29f, 1.00f);
+    style->Colors[ImGuiCol_Button] = ImVec4(0.47f, 0.77f, 0.83f, 0.14f);
+    style->Colors[ImGuiCol_ButtonHovered] = ImVec4(0.92f, 0.18f, 0.29f, 0.86f);
+    style->Colors[ImGuiCol_ButtonActive] = ImVec4(0.92f, 0.18f, 0.29f, 1.00f);
+    style->Colors[ImGuiCol_Header] = ImVec4(0.92f, 0.18f, 0.29f, 0.76f);
+    style->Colors[ImGuiCol_HeaderHovered] = ImVec4(0.92f, 0.18f, 0.29f, 0.86f);
+    style->Colors[ImGuiCol_HeaderActive] = ImVec4(0.92f, 0.18f, 0.29f, 1.00f);
+    style->Colors[ImGuiCol_Separator] = ImVec4(0.14f, 0.16f, 0.19f, 1.00f);
+    style->Colors[ImGuiCol_SeparatorHovered] = ImVec4(0.92f, 0.18f, 0.29f, 0.78f);
+    style->Colors[ImGuiCol_SeparatorActive] = ImVec4(0.92f, 0.18f, 0.29f, 1.00f);
+    style->Colors[ImGuiCol_ResizeGrip] = ImVec4(0.47f, 0.77f, 0.83f, 0.04f);
+    style->Colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.92f, 0.18f, 0.29f, 0.78f);
+    style->Colors[ImGuiCol_ResizeGripActive] = ImVec4(0.92f, 0.18f, 0.29f, 1.00f);
+    style->Colors[ImGuiCol_PlotLines] = ImVec4(0.86f, 0.93f, 0.89f, 0.63f);
+    style->Colors[ImGuiCol_PlotLinesHovered] = ImVec4(0.92f, 0.18f, 0.29f, 1.00f);
+    style->Colors[ImGuiCol_PlotHistogram] = ImVec4(0.86f, 0.93f, 0.89f, 0.63f);
+    style->Colors[ImGuiCol_PlotHistogramHovered] = ImVec4(0.92f, 0.18f, 0.29f, 1.00f);
+    style->Colors[ImGuiCol_TextSelectedBg] = ImVec4(0.92f, 0.18f, 0.29f, 0.43f);
+    style->Colors[ImGuiCol_PopupBg] = ImVec4(0.20f, 0.22f, 0.27f, 0.9f);
+    //style->Colors[ImGuiCol_ModalWindowDarkening] = ImVec4(0.20f, 0.22f, 0.27f, 0.73f);
 }

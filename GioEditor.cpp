@@ -1,8 +1,23 @@
 #include "GioEditor.h"
-#include "Camera.h"
-#include "CameraControls.h"
-#include "GizmoGUI.h"
-#include "Style.h"
+#include "Camera/Camera.h"
+#include "GUI/GizmoGUI.h"
+#include "GUI/Style.h"
+
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+#include "GameObject.h"
+
+#include <ImGuizmo.h>
+
+#include <glm/ext/matrix_clip_space.hpp>
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+#include <vector>
+#include <string>
+#include <filesystem>
+#include <iostream>
 
 /* constructors */
 // these are going to be here for now
@@ -41,8 +56,10 @@ int GioEditor::window_should_close() {
     return glfwWindowShouldClose(this->main_window);
 }
 
+std::vector<mesh> meshes;
+
 // objects matrices
-std::vector<std::array<float, 16>> object_matrix;
+std::vector<glm::mat4> object_matrix;
 
 static const float identity_matrix[16] =
 { 1.f, 0.f, 0.f, 0.f,
@@ -56,12 +73,90 @@ glm::vec3 old_mouse_pos;
 // scene creation
 root* root_scene;
 
+std::vector<char*> console_items;
+static int console_item_current = 0;
+
+// Load the model using Assimp
+Assimp::Importer importer;
+
+void processNode(aiNode* node, const aiScene* scene);
+void processMesh(aiMesh* mesh, const aiScene* /*scene*/);
+
+void processNode(aiNode* node, const aiScene* scene) {
+    // Process all the node's meshes (if any)
+    for (unsigned int i = 0; i < node->mNumMeshes; i++) {
+        aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
+        processMesh(mesh, scene);
+    }
+
+    // Then do the same for each of its children
+    for (unsigned int i = 0; i < node->mNumChildren; i++) {
+        processNode(node->mChildren[i], scene);
+    }
+}
+
+
+void processMesh(aiMesh* ai_mesh, const aiScene* /*scene*/) {
+    mesh m;
+
+    // Iterate through all vertices in the aiMesh
+    for (unsigned int i = 0; i < ai_mesh->mNumVertices; i++) {
+        glm::vec3 vertex;
+        vertex.x = ai_mesh->mVertices[i].x;
+        vertex.y = ai_mesh->mVertices[i].y;
+        vertex.z = ai_mesh->mVertices[i].z;
+
+        // Add the vertex to the mesh's vertex list
+        m.vertices.push_back(vertex);
+    }
+
+    // Store the number of vertices
+    m.numVertices = ai_mesh->mNumVertices;
+
+    // Push the mesh into the vector of meshes
+    meshes.push_back(m);
+}
+
+void push_to_console(std::string string)
+{
+    std::string* str = new std::string(string);
+    console_items.push_back((char*)str->c_str());
+    console_item_current++;
+}
+
+void loadAllObjFiles(const std::string& directory) {
+    Assimp::Importer importer;
+
+    for (const auto& entry : std::filesystem::directory_iterator(directory)) {
+        if (entry.path().extension() == ".obj") {
+            const aiScene* scene = importer.ReadFile(entry.path().string(),
+                aiProcess_Triangulate | aiProcess_FlipUVs);
+
+            if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
+                std::cerr << "Failed to load model: " << entry.path().string() << " - "
+                    << importer.GetErrorString() << std::endl;
+                continue;
+            }
+
+            node* current_scene = get_node_from_id(root_scene->current_scene);
+            mesh* new_object = (mesh*)create_new_object("mesh_object", "mesh");
+            current_scene->add_child(new_object);
+            object_matrix.push_back(new_object->transform);
+
+            // Process the root node
+            processNode(scene->mRootNode, scene);
+
+            push_to_console("Loaded new mesh: " + new_object->name + " created with: " + std::to_string(new_object->numVertices) + " vertices");
+        }
+    }
+}
+
 // GUI stuff
 void object_instance_window()
 {
-    ImGui::SetNextWindowPos(ImVec2(1135, 10));
-    ImGui::SetNextWindowSize(ImVec2(140, 400));
-    ImGui::Begin("object_instance_window", 0);
+    ImGui::SetNextWindowPos(ImVec2(1110, 10));
+    ImGui::SetNextWindowSize(ImVec2(30, 400));
+    ImGui::Begin("Instances");
     static std::vector<char *> items;
     static int item_current = 0;
     ImGui::ListBox(" ", &item_current, items.data(), items.size(), 10);
@@ -73,8 +168,70 @@ void object_instance_window()
         object_matrix.push_back(new_object->transform);
         items.push_back((char*)new_object->name.c_str());
         item_current++;
+
+        push_to_console("Added instance " + new_object->name);
+
+        const aiScene* scene = importer.ReadFile("cube.obj",
+            aiProcess_Triangulate | aiProcess_FlipUVs);
+        if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
+            push_to_console("Failed to load model: " + std::string(importer.GetErrorString()));
+            return;
+        }
+
+        // Process the root node
+        processNode(scene->mRootNode, scene);
     }
     ImGui::End();
+}
+
+void console_window()
+{
+    ImGui::SetNextWindowPos(ImVec2(10, 420));
+    ImGui::SetNextWindowSize(ImVec2(1260, 290));
+    ImGui::Begin("Console", 0);
+    ImGui::ListBox(" ", &console_item_current, console_items.data(), console_items.size(), 10);
+    ImGui::End();
+}
+
+void mesh_selector()
+{
+    ImGui::Separator();
+    ImGui::Text("Model");
+    ImGui::Button("Select Mesh");
+    ImGui::SameLine();
+    ImGui::Text("Load another .OBJ Model:");
+}
+
+void render_mesh(glm::mat4 camera_view, glm::mat4 camera_projection, int window_width, int window_height, int lastUsing)
+{
+    ImDrawList* list = ImGui::GetWindowDrawList();
+
+    const mesh& mesh = meshes[lastUsing];
+    glm::mat4 model = glm::mat4(1.0f);
+    glm::mat4 view = camera_view;
+    glm::mat4 projection = camera_projection;
+
+    std::vector<ImVec2> triangleVertices;
+    for (unsigned int i = 0; i < mesh.numVertices; i++) {
+        // Convert each vertex from model space to world space
+        glm::vec4 vertexWorld = model * glm::vec4(mesh.vertices[i], 1.0f);
+        // Then from world space to clip space
+        glm::vec4 vertexClip = projection * view * vertexWorld;
+
+        if (vertexClip.w > 0.0f) {  // Check to avoid divide by zero
+            glm::vec3 vertexNDC = glm::vec3(vertexClip) / vertexClip.w;
+            // Convert NDC to screen space
+            float x = (vertexNDC.x + 1.0f) * 0.5f * window_width + ImGui::GetWindowPos().x;
+            float y = (1.0f - vertexNDC.y) * 0.5f * window_height + ImGui::GetWindowPos().y;
+            triangleVertices.push_back(ImVec2(x, y));
+        }
+
+        // When we've collected 3 vertices (1 triangle), draw it
+        if (triangleVertices.size() == 3) {
+            list->AddConvexPolyFilled(triangleVertices.data(), 3, ImGui::GetColorU32(ImVec4(0.32f, 0.32f, 0.32f, 1.0f)));
+            triangleVertices.clear();  // Clear the vector to prepare for the next triangle
+        }
+    }
 }
 
 int GioEditor::ready()
@@ -99,7 +256,8 @@ int GioEditor::ready()
     // Setup style
     ImGui::StyleColorsDark();
 
-    auto font_default = io.Fonts->AddFontDefault();
+    //auto font_default = io.Fonts->AddFontDefault();
+    ImFont* font1 = io.Fonts->AddFontFromFileTTF("Ubuntu-Light.ttf", 14);
 
     unsigned int procTexture;
     glGenTextures(1, &procTexture);
@@ -133,14 +291,20 @@ int GioEditor::ready()
     root_scene = new root;
     root_scene->init_root_scene(root_scene);
 
+    push_to_console("Called root_scene->init_root_scene()");
+
     scene* scene_test = new scene;
     scene_test->create_new_scene("test_scene", scene_test, root_scene);
+
+    push_to_console("Created new scene " + scene_test->name);
 
     editor_camera = new camera;
     editor_camera->pitch = 0.0f;
     editor_camera->yaw = 0.0f;
 
     editor_camera->position = glm::vec3(0.0f, 0.0f, 0.0f);
+
+    loadAllObjFiles(".");
 
     return 0;
 }
@@ -190,27 +354,39 @@ int GioEditor::update() {
     }
     ImGui::Separator();
 
-    gizmo_transform_create(camera_view, camera_projection, object_matrix, (float*)identity_matrix, lastUsing, this->editor_camera);
+    gizmo_transform_create(camera_view, camera_projection, object_matrix, (float*)identity_matrix, lastUsing, this->editor_camera, meshes);
 
     if (object_matrix.size() > 0)
     {
-        for (int matId = 0; matId < object_matrix.size(); matId++)
-        {
+        int matId = 0;
+        for (const mesh& mesh : meshes) {
             ImGuizmo::SetID(matId);
-
-            gizmo_edit_transform(camera_view, camera_projection, object_matrix[matId].data());
+            gizmo_edit_transform(camera_view, camera_projection, glm::value_ptr(object_matrix[matId]));
             if (ImGuizmo::IsUsing())
             {
                 lastUsing = matId;
             }
+            matId++;
         }
     }
 
     gizmo_transform_end();
 
+    if (object_matrix.size() > 0)
+    {
+        mesh_selector();
+
+        //ImGuiWindowFlags window_flags = ImGuiWindowFlags
+
+        ImGui::BeginChild("idk, test");
+        render_mesh(glm::lookAt(glm::vec3(1.0f, 0.5f, 2.5f), get_look_at(glm::vec3(0.0f), 0.0, 0.0), glm::vec3(0, 1, 0)), glm::perspective(20.0f, 1.0f, 0.1f, 100.0f), 100, 100, lastUsing);
+        ImGui::EndChild();
+    }
+
     ImGui::End();
 
     object_instance_window();
+    console_window();
 
     ImGui::SetNextWindowPos(ImVec2(10, 350));
 

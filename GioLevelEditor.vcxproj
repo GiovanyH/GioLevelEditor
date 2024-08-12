@@ -104,6 +104,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -127,27 +128,27 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Camera.cpp" />
-    <ClCompile Include="CameraControls.cpp" />
+    <ClCompile Include="Camera\Camera.cpp" />
+    <ClCompile Include="Camera\CameraControls.cpp" />
     <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="GioEditor.cpp" />
-    <ClCompile Include="GizmoGUI.cpp" />
+    <ClCompile Include="GUI\GizmoGUI.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="OpenGL\glad.c" />
     <ClCompile Include="OpenGL\imgui_impl_opengl3.cpp" />
     <ClCompile Include="OS\imgui_impl_glfw.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Camera.h" />
-    <ClInclude Include="CameraControls.h" />
+    <ClInclude Include="Camera\Camera.h" />
+    <ClInclude Include="Camera\CameraControls.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="GioEditor.h" />
-    <ClInclude Include="GizmoGUI.h" />
+    <ClInclude Include="GUI\GizmoGUI.h" />
+    <ClInclude Include="GUI\Style.h" />
     <ClInclude Include="OpenGL\glad.h" />
     <ClInclude Include="OpenGL\imgui_impl_opengl3.h" />
     <ClInclude Include="OpenGL\khrplatform.h" />
     <ClInclude Include="OS\imgui_impl_glfw.h" />
-    <ClInclude Include="Style.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

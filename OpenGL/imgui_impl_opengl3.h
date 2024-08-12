@@ -11,8 +11,7 @@
 // The 'glsl_version' initialization parameter defaults to "#version 150" if NULL.
 // Only override if your GL version doesn't handle this GLSL version. Keep NULL if unsure!
 
-#ifndef IMGUI_IMPL_OPENGL
-#define IMGUI_IMPL_OPENGL
+#pragma once
 
 #include "glad.h"    // This example is using gl3w to access OpenGL functions. You may freely use any other OpenGL loader such as: glew, glad, glLoadGen, etc.
 #include <imgui.h>
@@ -27,5 +26,3 @@ IMGUI_IMPL_API bool     ImGui_ImplOpenGL3_CreateFontsTexture();
 IMGUI_IMPL_API void     ImGui_ImplOpenGL3_DestroyFontsTexture();
 IMGUI_IMPL_API bool     ImGui_ImplOpenGL3_CreateDeviceObjects();
 IMGUI_IMPL_API void     ImGui_ImplOpenGL3_DestroyDeviceObjects();
-
-#endif

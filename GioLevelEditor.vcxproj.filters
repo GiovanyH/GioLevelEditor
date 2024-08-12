@@ -45,14 +45,14 @@
     <ClCompile Include="GameObject.cpp">
       <Filter>Arquivos de Cabeçalho</Filter>
     </ClCompile>
-    <ClCompile Include="GizmoGUI.cpp">
+    <ClCompile Include="Camera\Camera.cpp">
+      <Filter>Arquivos de Cabeçalho\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="Camera\CameraControls.cpp">
+      <Filter>Arquivos de Cabeçalho\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="GUI\GizmoGUI.cpp">
       <Filter>Arquivos de Cabeçalho\GUI</Filter>
-    </ClCompile>
-    <ClCompile Include="CameraControls.cpp">
-      <Filter>Arquivos de Cabeçalho\Camera</Filter>
-    </ClCompile>
-    <ClCompile Include="Camera.cpp">
-      <Filter>Arquivos de Cabeçalho\Camera</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -74,16 +74,16 @@
     <ClInclude Include="GameObject.h">
       <Filter>Arquivos de Cabeçalho</Filter>
     </ClInclude>
-    <ClInclude Include="GizmoGUI.h">
+    <ClInclude Include="Camera\Camera.h">
+      <Filter>Arquivos de Cabeçalho\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera\CameraControls.h">
+      <Filter>Arquivos de Cabeçalho\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="GUI\GizmoGUI.h">
       <Filter>Arquivos de Cabeçalho\GUI</Filter>
     </ClInclude>
-    <ClInclude Include="Camera.h">
-      <Filter>Arquivos de Cabeçalho\Camera</Filter>
-    </ClInclude>
-    <ClInclude Include="CameraControls.h">
-      <Filter>Arquivos de Cabeçalho\Camera</Filter>
-    </ClInclude>
-    <ClInclude Include="Style.h">
+    <ClInclude Include="GUI\Style.h">
       <Filter>Arquivos de Cabeçalho\GUI</Filter>
     </ClInclude>
   </ItemGroup>
