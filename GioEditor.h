@@ -12,7 +12,7 @@ private:
     GLFWwindow* main_window = nullptr;
     unsigned int VAO = 0, VBO = 0;
     int firstFrame = false;
-    int lastUsing = 0;
+    int *lastUsing = new int(0);
     glm::mat4 camera_view;
     glm::mat4 camera_projection;
     camera* editor_camera;

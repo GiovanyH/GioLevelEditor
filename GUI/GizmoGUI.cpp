@@ -29,7 +29,7 @@ int get_key_down(ImGuiKey key)
 }
 
 // Gizmo manipulation
-void gizmo_transform_create(glm::mat4 camera_view, glm::mat4 camera_projection, std::vector<glm::mat4> object_matrix, float* identity_matrix, int lastUsing, camera* editor_camera, std::vector<mesh> meshes)
+void gizmo_transform_create(glm::mat4 camera_view, glm::mat4 camera_projection, std::vector<glm::mat4> object_matrix, float* identity_matrix, int lastUsing, camera* editor_camera, std::vector<mesh*> meshes)
 {
     static float old_pitch;
     static float old_yaw;
@@ -116,15 +116,15 @@ void gizmo_transform_create(glm::mat4 camera_view, glm::mat4 camera_projection, 
 
     int count = 0;
 
-    for (const mesh& mesh : meshes) {
+    for (const mesh* mesh : meshes) {
         glm::mat4 model = object_matrix[count];
         glm::mat4 view = camera_view;
         glm::mat4 projection = camera_projection;
 
         std::vector<ImVec2> triangleVertices;
-        for (unsigned int i = 0; i < mesh.numVertices; i++) {
+        for (unsigned int i = 0; i < mesh->numVertices; i++) {
             // Convert each vertex from model space to world space
-            glm::vec4 vertexWorld = model * glm::vec4(mesh.vertices[i], 1.0f);
+            glm::vec4 vertexWorld = model * glm::vec4(mesh->vertices[i], 1.0f);
             // Then from world space to clip space
             glm::vec4 vertexClip = projection * view * vertexWorld;
 

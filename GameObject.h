@@ -41,6 +41,8 @@ class mesh : public node
 public:
 	unsigned int numVertices;
 	std::vector<glm::vec3> vertices;
+
+	int current_mesh;
 };
 
 node* create_new_object(std::string name, std::string type);

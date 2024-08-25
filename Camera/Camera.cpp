@@ -12,3 +12,7 @@ glm::vec3 get_forward_vector(float yaw, float pitch) {
 
     return glm::normalize(forward);
 }
+
+glm::vec3 camera::get_screen_space_position(glm::vec3 offset) {
+    return this->position + offset;
+}

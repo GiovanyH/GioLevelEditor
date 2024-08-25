@@ -10,6 +10,9 @@
 
 #include <ImGuizmo.h>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -20,7 +23,6 @@
 #include <iostream>
 
 /* constructors */
-// these are going to be here for now
 GioEditor::GioEditor() {
     this->screen_width = 1280;
     this->screen_height = 720;
@@ -30,13 +32,13 @@ camera* GioEditor::get_cam() {
     return editor_camera;
 }
 
-// glfw initialization
+// TODO: Move this to somewhere else
+/* GLFW */
 void glfw_error_callback(int error, const char* description) {
     fprintf(stderr, "GLFW error %d: %s\n", error, description);
 }
 
-int GioEditor::init_glfw() 
-{
+int GioEditor::init_glfw() {
     // setup glfw
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit())
@@ -55,8 +57,75 @@ int GioEditor::init_glfw()
 int GioEditor::window_should_close() {
     return glfwWindowShouldClose(this->main_window);
 }
+/* == */
+
+/*
+
+Sky Box code!!
+
+*/
+
+std::array<std::string, 6> cubemap;
+
+unsigned int get_cubemap_texture_id();
+
+/*
+
+    Example:
+        load_cubemap(
+            "right.jpg",
+            "left.jpg",
+            "top.jpg",
+            "bottom.jpg",
+            "front.jpg",
+            "back.jpg"
+        );
+
+*/
+
+unsigned int load_cubemap(const char* right, const char* left, const char* top, const char* bottom, const char* front, const char* back) {
+    cubemap[0] = right;
+    cubemap[1] = left;
+    cubemap[2] = top;
+    cubemap[3] = bottom;
+    cubemap[4] = front;
+    cubemap[5] = back;
+
+    return get_cubemap_texture_id();
+}
+
+unsigned int get_cubemap_texture_id() {
+    unsigned int texture_id;
+    glGenTextures(1, &texture_id);
+
+
+    int width, height, nrChannels;
+    for (unsigned int i = 0; i < 6; i++) {
+        unsigned char *data = stbi_load(cubemap[i].c_str(), &width, &height, &nrChannels, 0);
+        if (data) {
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+            stbi_image_free(data);
+        }
+        else {
+            std::cout << "Cubemap tex Failed to load at path: " << cubemap[i] << std::endl;
+            stbi_image_free(data);
+        }
+    }
+
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    glBindTexture(GL_TEXTURE_CUBE_MAP, texture_id);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+
+    return texture_id;
+}
 
 std::vector<mesh> meshes;
+std::vector<mesh*> objects;
 
 // objects matrices
 std::vector<glm::mat4> object_matrix;
@@ -73,10 +142,29 @@ glm::vec3 old_mouse_pos;
 // scene creation
 root* root_scene;
 
+// TODO: Move this to another file, maybe a console?
+/* Console */
 std::vector<char*> console_items;
 static int console_item_current = 0;
 
-// Load the model using Assimp
+void console_window() {
+    ImGui::SetNextWindowPos(ImVec2(10, 420));
+    ImGui::SetNextWindowSize(ImVec2(1260, 290));
+    ImGui::Begin("Console", 0);
+    ImGui::ListBox(" ", &console_item_current, console_items.data(), console_items.size(), 10);
+    ImGui::End();
+}
+
+void push_to_console(std::string string) {
+    std::string* str = new std::string(string);
+    console_items.push_back((char*)str->c_str());
+    console_item_current++;
+}
+
+/* == */
+
+// TODO: Move this to another file, ObjLoder?
+/* Assimp importer stuff*/
 Assimp::Importer importer;
 
 void processNode(aiNode* node, const aiScene* scene);
@@ -94,8 +182,6 @@ void processNode(aiNode* node, const aiScene* scene) {
         processNode(node->mChildren[i], scene);
     }
 }
-
-
 void processMesh(aiMesh* ai_mesh, const aiScene* /*scene*/) {
     mesh m;
 
@@ -117,13 +203,6 @@ void processMesh(aiMesh* ai_mesh, const aiScene* /*scene*/) {
     meshes.push_back(m);
 }
 
-void push_to_console(std::string string)
-{
-    std::string* str = new std::string(string);
-    console_items.push_back((char*)str->c_str());
-    console_item_current++;
-}
-
 void loadAllObjFiles(const std::string& directory) {
     Assimp::Importer importer;
 
@@ -138,28 +217,105 @@ void loadAllObjFiles(const std::string& directory) {
                 continue;
             }
 
-            node* current_scene = get_node_from_id(root_scene->current_scene);
-            mesh* new_object = (mesh*)create_new_object("mesh_object", "mesh");
-            current_scene->add_child(new_object);
-            object_matrix.push_back(new_object->transform);
+            //node* current_scene = get_node_from_id(root_scene->current_scene);
+            //mesh* new_object = (mesh*)create_new_object("mesh_object", "mesh");
+            //current_scene->add_child(new_object);
+            //object_matrix.push_back(new_object->transform);
 
             // Process the root node
             processNode(scene->mRootNode, scene);
 
-            push_to_console("Loaded new mesh: " + new_object->name + " created with: " + std::to_string(new_object->numVertices) + " vertices");
+            //push_to_console("Loaded new mesh: " + new_object->name + " created with: " + std::to_string(new_object->numVertices) + " vertices");
         }
     }
 }
 
-// GUI stuff
-void object_instance_window()
+static int item_current = 0;
+
+/* == */
+
+static int open_popup = false;
+
+void update_mesh(glm::mat4 view, glm::mat4 projection, int window_width, int window_height, int lastUsing);
+void render_precomputed_mesh();
+
+int mesh_select_popup()
 {
+    int selected = -1;
+    if (ImGui::BeginPopup("meshpopup")) // <-- use last item id as popup id
+    {
+        // Get the size of the child window for rendering the mesh
+        ImVec2 childSize = ImVec2(100, 100); // Customize as needed
+
+        int count = 0;
+
+        for (mesh static_mesh : meshes) {
+            count++;
+
+            ImVec2 relative_pos = ImGui::GetCursorPos();
+
+            // Set cursor position and begin the child window
+            ImGui::SetCursorPos(relative_pos);
+            ImGui::BeginChild(("mesh" + std::to_string(count)).c_str(), childSize, true);
+
+            ImVec2 childPos = ImGui::GetCursorScreenPos();
+            int viewportX = static_cast<int>(childPos.x);
+            int viewportY = static_cast<int>(childPos.y);
+            int viewportWidth = static_cast<int>(childSize.x);
+            int viewportHeight = static_cast<int>(childSize.y);
+
+            glViewport(viewportX, viewportY, viewportWidth, viewportHeight);
+            glScissor(viewportX, viewportY, viewportWidth, viewportHeight);
+
+            glm::mat4 viewMatrix = glm::lookAt(
+                glm::vec3(0.0f, 0.0f, 3.0f),  // Camera position
+                glm::vec3(0.0f, 0.0f, 0.0f),  // Look at point
+                glm::vec3(0.0f, 1.0f, 0.0f)   // Up vector
+            );
+
+            glm::mat4 projectionMatrix = glm::perspective(
+                glm::radians(45.0f),          // Field of view
+                1.0f,                         // Aspect ratio (adjust if needed)
+                0.1f,                         // Near plane
+                100.0f                        // Far plane
+            );
+
+            update_mesh(viewMatrix, projectionMatrix, viewportWidth, viewportHeight, count - 1);
+            render_precomputed_mesh();
+
+            if (ImGui::Button("select")) {
+                selected = count - 1;
+
+                ImGui::CloseCurrentPopup();
+                open_popup = false;
+            }
+
+            ImGui::EndChild();
+
+            ImGui::SameLine();
+        }
+
+
+        if (ImGui::Button("Close")) {
+            ImGui::CloseCurrentPopup();
+            open_popup = false;
+        }
+        ImGui::EndPopup();
+    }
+    ImGui::OpenPopup("meshpopup");
+
+    return selected;
+}
+
+// TODO: Move to GUI/Something
+// TODO: Gizmo selected should be directly linked to what is selected here
+/* GUI stuff */
+void object_instance_window(int *item_current) {
     ImGui::SetNextWindowPos(ImVec2(1110, 10));
     ImGui::SetNextWindowSize(ImVec2(30, 400));
     ImGui::Begin("Instances");
     static std::vector<char *> items;
-    static int item_current = 0;
-    ImGui::ListBox(" ", &item_current, items.data(), items.size(), 10);
+    ImGui::ListBox(" ", item_current, items.data(), items.size(), 10);
     ImGui::SameLine();
     if (ImGui::Button("+", ImVec2(20, 20))) {
         node* current_scene = get_node_from_id(root_scene->current_scene);
@@ -167,75 +323,161 @@ void object_instance_window()
         current_scene->add_child(new_object);
         object_matrix.push_back(new_object->transform);
         items.push_back((char*)new_object->name.c_str());
-        item_current++;
+        *item_current++;
 
         push_to_console("Added instance " + new_object->name);
 
-        const aiScene* scene = importer.ReadFile("cube.obj",
-            aiProcess_Triangulate | aiProcess_FlipUVs);
-        if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
-            push_to_console("Failed to load model: " + std::string(importer.GetErrorString()));
-            return;
-        }
+        mesh* m_object = new mesh();
+        m_object->numVertices = meshes[0].numVertices;
+        m_object->vertices = meshes[0].vertices;
 
-        // Process the root node
-        processNode(scene->mRootNode, scene);
+        objects.push_back(m_object);
     }
     ImGui::End();
 }
 
-void console_window()
-{
-    ImGui::SetNextWindowPos(ImVec2(10, 420));
-    ImGui::SetNextWindowSize(ImVec2(1260, 290));
-    ImGui::Begin("Console", 0);
-    ImGui::ListBox(" ", &console_item_current, console_items.data(), console_items.size(), 10);
-    ImGui::End();
+void load_object_mesh(mesh *m_object, int current_mesh) {
+    m_object->numVertices = meshes[current_mesh].numVertices;
+    m_object->vertices = meshes[current_mesh].vertices;
 }
 
-void mesh_selector()
-{
+void mesh_selector() {
     ImGui::Separator();
     ImGui::Text("Model");
-    ImGui::Button("Select Mesh");
+    if (ImGui::Button("Select Mesh")) open_popup = true;
     ImGui::SameLine();
     ImGui::Text("Load another .OBJ Model:");
 }
 
-void render_mesh(glm::mat4 camera_view, glm::mat4 camera_projection, int window_width, int window_height, int lastUsing)
-{
-    ImDrawList* list = ImGui::GetWindowDrawList();
+std::vector<ImVec2> precomputedVertices;
 
-    const mesh& mesh = meshes[lastUsing];
-    glm::mat4 model = glm::mat4(1.0f);
-    glm::mat4 view = camera_view;
-    glm::mat4 projection = camera_projection;
+void precompute_static_mesh(glm::mat4 model, glm::mat4 view, glm::mat4 projection, int window_width, int window_height, int meshIndex) {
+    const mesh& mesh = meshes[meshIndex];
+    glm::mat4 modelViewProjection = projection * view * model;
 
-    std::vector<ImVec2> triangleVertices;
+    ImVec2 windowPos = ImGui::GetWindowPos();
+
+    precomputedVertices.clear();  // Clear previous data
+    precomputedVertices.reserve(mesh.numVertices);  // Allocate memory
+
     for (unsigned int i = 0; i < mesh.numVertices; i++) {
-        // Convert each vertex from model space to world space
-        glm::vec4 vertexWorld = model * glm::vec4(mesh.vertices[i], 1.0f);
-        // Then from world space to clip space
-        glm::vec4 vertexClip = projection * view * vertexWorld;
+        glm::vec4 vertexClip = modelViewProjection * glm::vec4(mesh.vertices[i], 1.0f);
 
-        if (vertexClip.w > 0.0f) {  // Check to avoid divide by zero
+        if (vertexClip.w > 0.0f) {
             glm::vec3 vertexNDC = glm::vec3(vertexClip) / vertexClip.w;
-            // Convert NDC to screen space
-            float x = (vertexNDC.x + 1.0f) * 0.5f * window_width + ImGui::GetWindowPos().x;
-            float y = (1.0f - vertexNDC.y) * 0.5f * window_height + ImGui::GetWindowPos().y;
-            triangleVertices.push_back(ImVec2(x, y));
-        }
-
-        // When we've collected 3 vertices (1 triangle), draw it
-        if (triangleVertices.size() == 3) {
-            list->AddConvexPolyFilled(triangleVertices.data(), 3, ImGui::GetColorU32(ImVec4(0.32f, 0.32f, 0.32f, 1.0f)));
-            triangleVertices.clear();  // Clear the vector to prepare for the next triangle
+            float x = (vertexNDC.x + 1.0f) * 0.5f * window_width + windowPos.x;
+            float y = (1.0f - vertexNDC.y) * 0.5f * window_height + windowPos.y;
+            precomputedVertices.push_back(ImVec2(x, y));
         }
     }
 }
 
-int GioEditor::ready()
-{
+void update_mesh(glm::mat4 view, glm::mat4 projection, int window_width, int window_height, int lastUsing) {
+    static glm::mat4 lastView;
+    static glm::mat4 lastProjection;
+    static int lastLastUsing;
+
+    if (view != lastView || projection != lastProjection || lastLastUsing != lastUsing) {
+        precompute_static_mesh(glm::mat4(1.0f), view, projection, window_width, window_height, lastUsing);
+        lastView = view;
+        lastProjection = projection;
+        lastLastUsing = lastUsing;
+    }
+}
+
+void render_precomputed_mesh() {
+    ImDrawList* list = ImGui::GetWindowDrawList();
+
+    for (size_t i = 0; i < precomputedVertices.size(); i += 3) {
+        list->AddConvexPolyFilled(&precomputedVertices[i], 3, ImGui::GetColorU32(ImVec4(1.0f, 1.0f, 1.0f, 1.0f)));
+    }
+}
+
+// Function to compile a shader
+unsigned int compile_shader(unsigned int type, const char* source) {
+    unsigned int shader = glCreateShader(type);
+    glShaderSource(shader, 1, &source, nullptr);
+    glCompileShader(shader);
+
+    // Check for compilation errors
+    int success;
+    char infoLog[512];
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        glGetShaderInfoLog(shader, 512, nullptr, infoLog);
+        std::cout << "ERROR::SHADER::COMPILATION_FAILED\n" << infoLog << std::endl;
+    }
+
+    return shader;
+}
+
+// Create and link the shader program
+unsigned int create_shader_program(unsigned int vertex_shader, unsigned int frament_shader) {
+    unsigned int shaderProgram = glCreateProgram();
+    glAttachShader(shaderProgram, vertex_shader);
+    glAttachShader(shaderProgram, frament_shader);
+    glLinkProgram(shaderProgram);
+
+    // Check for linking errors
+    int success;
+    char infoLog[512];
+    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+    if (!success) {
+        glGetProgramInfoLog(shaderProgram, 512, nullptr, infoLog);
+        std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
+    }
+
+    // Delete the shaders as they're linked into the program now and no longer needed
+    glDeleteShader(vertex_shader);
+    glDeleteShader(frament_shader);
+
+    return shaderProgram;
+}
+
+unsigned int skybox_shader;
+
+void load_skybox_shader() {
+    const char *vertex_shader_str = R"(
+        #version 330 core
+        layout (location = 0) in vec3 aPos;
+
+        out vec3 TexCoords;
+
+        uniform mat4 projection;
+        uniform mat4 view;
+
+        void main()
+        {
+            TexCoords = aPos;
+            gl_Position = projection * view * vec4(aPos, 1.0);
+        }  
+    )";
+
+    const char *fragment_shader_str = R"(
+        #version 330 core
+        out vec4 FragColor;
+
+        in vec3 TexCoords;
+
+        uniform samplerCube skybox;
+
+        void main()
+        {    
+            FragColor = texture(skybox, TexCoords);
+        }
+    )";
+
+    unsigned int vertex_shader = compile_shader(GL_VERTEX_SHADER, vertex_shader_str);
+    unsigned int fragment_shader = compile_shader(GL_FRAGMENT_SHADER, fragment_shader_str);
+
+    skybox_shader = create_shader_program(vertex_shader, fragment_shader);
+    glUseProgram(skybox_shader);
+}
+
+unsigned int cubemap_texture;
+unsigned int skybox_vao;
+
+int GioEditor::ready() {
     // setup glfw
     this->init_glfw();
 
@@ -306,6 +548,84 @@ int GioEditor::ready()
 
     loadAllObjFiles(".");
 
+
+    /*
+    
+        Cubemap code!!
+
+    */
+   
+    float skybox_vertices[] = {
+        // positions          
+        -1.0f,  1.0f, -1.0f,
+        -1.0f, -1.0f, -1.0f,
+         1.0f, -1.0f, -1.0f,
+         1.0f, -1.0f, -1.0f,
+         1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+
+        -1.0f, -1.0f,  1.0f,
+        -1.0f, -1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f,  1.0f,
+        -1.0f, -1.0f,  1.0f,
+
+         1.0f, -1.0f, -1.0f,
+         1.0f, -1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f, -1.0f,
+         1.0f, -1.0f, -1.0f,
+
+        -1.0f, -1.0f,  1.0f,
+        -1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f, -1.0f,  1.0f,
+        -1.0f, -1.0f,  1.0f,
+
+        -1.0f,  1.0f, -1.0f,
+         1.0f,  1.0f, -1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+        -1.0f,  1.0f,  1.0f,
+        -1.0f,  1.0f, -1.0f,
+
+        -1.0f, -1.0f, -1.0f,
+        -1.0f, -1.0f,  1.0f,
+         1.0f, -1.0f, -1.0f,
+         1.0f, -1.0f, -1.0f,
+        -1.0f, -1.0f,  1.0f,
+         1.0f, -1.0f,  1.0f
+    };
+
+    unsigned int skybox_vbo;
+    glGenVertexArrays(1, &skybox_vao);
+    glGenBuffers(1, &skybox_vbo);
+    glBindVertexArray(skybox_vao);
+    glBindBuffer(GL_ARRAY_BUFFER, skybox_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(skybox_vertices), &skybox_vertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glBindVertexArray(0);
+
+    unsigned int cubemap_texture = load_cubemap(
+        "right.jpg",
+        "left.jpg",
+        "top.jpg",
+        "bottom.jpg",
+        "front.jpg",
+        "back.jpg"
+    );
+
+    /*
+        skybox shader usage!!
+    */
+
+    load_skybox_shader();
+    glUniform1i(glGetUniformLocation(skybox_shader, "skybox"), 0);
+
     return 0;
 }
 
@@ -320,15 +640,21 @@ int GioEditor::update() {
 
     ImGuiIO& io = ImGui::GetIO();
 
-    //Perspective(fov, io.DisplaySize.x / io.DisplaySize.y, 0.1f, 100.f, cameraProjection);
-    camera_projection = glm::perspective(fov, io.DisplaySize.x / io.DisplaySize.y, 0.1f, 100.0f);
     ImGuizmo::SetOrthographic(false);
     ImGuizmo::BeginFrame();
 
     // create a window and insert the inspector
     ImGui::SetNextWindowPos(ImVec2(10, 10));
     ImGui::SetNextWindowSize(ImVec2(320, 400));
+
     ImGui::Begin("Editor");
+
+    //Perspective(fov, io.DisplaySize.x / io.DisplaySize.y, 0.1f, 100.f, cameraProjection);
+    float aspect = io.DisplaySize.x / io.DisplaySize.y;
+    if (aspect < std::numeric_limits<float>::epsilon()) {
+        aspect = 1.0f; // Avoid zero aspect ratio
+    }
+    camera_projection = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 100.0f);
 
     ImGui::Text("Camera");
 
@@ -354,17 +680,17 @@ int GioEditor::update() {
     }
     ImGui::Separator();
 
-    gizmo_transform_create(camera_view, camera_projection, object_matrix, (float*)identity_matrix, lastUsing, this->editor_camera, meshes);
+    gizmo_transform_create(camera_view, camera_projection, object_matrix, (float*)identity_matrix, *lastUsing, this->editor_camera, objects);
 
     if (object_matrix.size() > 0)
     {
         int matId = 0;
-        for (const mesh& mesh : meshes) {
+        for (const mesh* mesh : objects) {
             ImGuizmo::SetID(matId);
             gizmo_edit_transform(camera_view, camera_projection, glm::value_ptr(object_matrix[matId]));
             if (ImGuizmo::IsUsing())
             {
-                lastUsing = matId;
+                *lastUsing = matId;
             }
             matId++;
         }
@@ -376,20 +702,26 @@ int GioEditor::update() {
     {
         mesh_selector();
 
-        //ImGuiWindowFlags window_flags = ImGuiWindowFlags
-
         ImGui::BeginChild("idk, test");
-        render_mesh(glm::lookAt(glm::vec3(1.0f, 0.5f, 2.5f), get_look_at(glm::vec3(0.0f), 0.0, 0.0), glm::vec3(0, 1, 0)), glm::perspective(20.0f, 1.0f, 0.1f, 100.0f), 100, 100, lastUsing);
+        update_mesh(glm::lookAt(glm::vec3(1.0f, 0.5f, 2.5f), get_look_at(glm::vec3(0.0f), 0.0, 0.0), glm::vec3(0, 1, 0)), glm::perspective(20.0f, 1.0f, 0.1f, 100.0f), 100, 100, objects[*lastUsing]->current_mesh);
+        render_precomputed_mesh();
         ImGui::EndChild();
     }
 
     ImGui::End();
 
-    object_instance_window();
+    object_instance_window(lastUsing);
     console_window();
 
-    ImGui::SetNextWindowPos(ImVec2(10, 350));
+    if (open_popup) {
+        int current_mesh = mesh_select_popup();
+        if (current_mesh != -1) {
+            load_object_mesh(objects[*lastUsing], current_mesh);
+            objects[*lastUsing]->current_mesh = current_mesh;
+        }
+    }
 
+    ImGui::SetNextWindowPos(ImVec2(10, 350));
     ImGui::SetNextWindowSize(ImVec2(940, 480));
 
     // Rendering
@@ -400,12 +732,36 @@ int GioEditor::update() {
 
     // rendering
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glEnable(GL_DEPTH_TEST);
+
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-    // everything falls under glUserProgram will impacted by the shader programs
-    glBindVertexArray(VAO);
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    /*
+
+        Skybox Rendering
+
+    */
+
+   // TODO: use framebuffers to render the gizmo
+   /*{
+        glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
+        glUseProgram(skybox_shader);
+        glm::mat4 view = glm::mat4(glm::mat3(camera_view)); // remove translation from the view matrix
+        //glm::mat4 projection = glm::mat4(glm::mat3(camera_projection));
+        glUniformMatrix4fv(glGetUniformLocation(skybox_shader, "view"), 1, GL_FALSE, &view[0][0]);
+        glUniformMatrix4fv(glGetUniformLocation(skybox_shader, "projection"), 1, GL_FALSE, &camera_projection[0][0]);
+
+        // skybox cube
+        glBindVertexArray(skybox_vao);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap_texture);
+
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        glBindVertexArray(0);
+        glDepthFunc(GL_LESS); // set depth function back to default
+    }*/
 
     // before finishing current frame
     glfwSwapBuffers(main_window);
@@ -414,8 +770,7 @@ int GioEditor::update() {
     return 0;
 }
 
-int GioEditor::clean_up()
-{
+int GioEditor::clean_up() {
     // Cleanup
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
